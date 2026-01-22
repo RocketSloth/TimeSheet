@@ -2,6 +2,8 @@
 
 A standalone time tracking application that runs directly in your web browser - perfect for tracking work hours Monday through Friday with lunch break support.
 
+![TimeSheet Main Interface](screenshots/main-interface.png)
+
 ## Features
 
 - ⏰ Clock in/out functionality (Monday-Friday only)
@@ -15,7 +17,17 @@ A standalone time tracking application that runs directly in your web browser - 
 
 ## Live Demo
 
-Visit the [GitHub Pages site](https://YOUR_USERNAME.github.io/TimeSheet/) to use the application.
+Visit the [GitHub Pages site](https://rocketsloth.github.io/TimeSheet/) to use the application.
+
+## Screenshots
+
+### Main Interface
+![Main Interface](screenshots/main-interface.png)
+*The main TimeSheet interface showing clock-in status, daily/weekly hours, and daily todo list*
+
+### Manual Time Entry
+![Manual Time Entry](screenshots/manual-entry.png)
+*Manual time entry section for retroactive time logging*
 
 ## How to Use
 
@@ -48,7 +60,7 @@ Your time tracking data and todos are stored in your browser's localStorage. Thi
 4. Select the branch (usually `main` or `master`)
 5. Select the folder (usually `/root`)
 6. Click Save
-7. Your site will be available at `https://YOUR_USERNAME.github.io/REPOSITORY_NAME/`
+7. Your site will be available at `https://rocketsloth.github.io/TimeSheet/`
 
 ## Local Usage
 

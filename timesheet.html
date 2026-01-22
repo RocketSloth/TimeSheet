@@ -1,0 +1,1409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TimeSheet - Time Tracking</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', 'Consolas', 'Monaco', monospace;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            background: #000C0E;
+            background-image: 
+                radial-gradient(circle at 20% 50%, rgba(200, 184, 170, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(66, 70, 62, 0.05) 0%, transparent 50%);
+            min-height: 100vh;
+            display: flex;
+            padding: 20px;
+            color: #C8B8AA;
+            gap: 20px;
+        }
+
+        .app-wrapper {
+            display: flex;
+            width: 100%;
+            max-width: 1400px;
+            margin: 0 auto;
+            gap: 20px;
+        }
+
+        .sidebar {
+            background: #212A27;
+            border: 2px solid #42463E;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 
+                0 0 20px rgba(33, 42, 39, 0.8),
+                0 0 40px rgba(0, 12, 14, 0.5),
+                inset 0 0 20px rgba(66, 70, 62, 0.1);
+            width: 280px;
+            min-width: 280px;
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+            position: sticky;
+            top: 20px;
+        }
+
+        .sidebar-header {
+            border-bottom: 1px solid #42463E;
+            padding-bottom: 15px;
+            margin-bottom: 15px;
+        }
+
+        .sidebar-header h2 {
+            font-size: 1.3rem;
+            color: #C8B8AA;
+            margin: 0;
+            text-shadow: 0 1px 2px rgba(0, 12, 14, 0.5);
+        }
+
+        .day-entry {
+            background: #42463E;
+            border: 1px solid #726760;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 10px;
+            transition: all 0.2s;
+        }
+
+        .day-entry:hover {
+            border-color: #C8B8AA;
+            box-shadow: 0 2px 4px rgba(0, 12, 14, 0.3);
+        }
+
+        .day-entry.today {
+            border-color: #C8B8AA;
+            box-shadow: 
+                0 0 8px rgba(200, 184, 170, 0.3),
+                inset 0 1px 2px rgba(200, 184, 170, 0.1);
+        }
+
+        .day-date {
+            font-size: 0.85rem;
+            color: #C3A69C;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .day-hours {
+            font-size: 1.1rem;
+            color: #C8B8AA;
+            font-weight: 700;
+        }
+
+        .day-hours-label {
+            font-size: 0.75rem;
+            color: #726760;
+            margin-top: 2px;
+        }
+
+        .container {
+            background: #212A27;
+            border: 2px solid #42463E;
+            border-radius: 10px;
+            padding: 40px;
+            box-shadow: 
+                0 0 20px rgba(33, 42, 39, 0.8),
+                0 0 40px rgba(0, 12, 14, 0.5),
+                inset 0 0 20px rgba(66, 70, 62, 0.1);
+            flex: 1;
+            max-width: 600px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            color: #C8B8AA;
+            margin-bottom: 10px;
+            font-weight: 700;
+            text-shadow: 
+                0 2px 4px rgba(0, 12, 14, 0.5),
+                0 0 10px rgba(200, 184, 170, 0.3);
+            letter-spacing: 2px;
+        }
+
+        .date {
+            color: #C3A69C;
+            font-size: 1rem;
+            text-shadow: 0 1px 2px rgba(0, 12, 14, 0.5);
+        }
+
+        .status-card {
+            background: #42463E;
+            border: 1px solid #726760;
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 25px;
+            text-align: center;
+            box-shadow: 
+                0 2px 8px rgba(0, 12, 14, 0.5),
+                inset 0 1px 2px rgba(200, 184, 170, 0.1);
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .status-dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #ccc;
+            transition: all 0.3s ease;
+        }
+
+        .status-dot.active {
+            background: #C8B8AA;
+            box-shadow: 
+                0 0 8px rgba(200, 184, 170, 0.6),
+                0 0 16px rgba(200, 184, 170, 0.3);
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.inactive {
+            background: #726760;
+            box-shadow: 
+                0 0 8px rgba(114, 103, 96, 0.5),
+                0 0 16px rgba(114, 103, 96, 0.2);
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+                box-shadow: 
+                    0 0 8px rgba(200, 184, 170, 0.6),
+                    0 0 16px rgba(200, 184, 170, 0.3);
+            }
+            50% {
+                opacity: 0.8;
+                box-shadow: 
+                    0 0 12px rgba(200, 184, 170, 0.8),
+                    0 0 24px rgba(200, 184, 170, 0.4);
+            }
+        }
+
+        .status-text {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #C8B8AA;
+            text-shadow: 0 1px 2px rgba(0, 12, 14, 0.5);
+        }
+
+        .clock-time {
+            color: #C3A69C;
+            font-size: 0.95rem;
+            margin-top: 10px;
+            text-shadow: 0 1px 2px rgba(0, 12, 14, 0.5);
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .lunch-controls {
+            display: flex;
+            gap: 15px;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary {
+            background: #42463E;
+            border: 2px solid #726760;
+            color: #C8B8AA;
+            box-shadow: 
+                0 2px 4px rgba(0, 12, 14, 0.5),
+                inset 0 1px 2px rgba(200, 184, 170, 0.1);
+        }
+
+        .btn-primary:hover {
+            background: #726760;
+            border-color: #C8B8AA;
+            color: #212A27;
+            box-shadow: 
+                0 4px 8px rgba(0, 12, 14, 0.6),
+                inset 0 1px 2px rgba(200, 184, 170, 0.2);
+            text-shadow: none;
+        }
+
+        .btn-secondary {
+            background: #42463E;
+            border: 2px solid #726760;
+            color: #C3A69C;
+            flex: 1;
+            box-shadow: 
+                0 2px 4px rgba(0, 12, 14, 0.5),
+                inset 0 1px 2px rgba(195, 166, 156, 0.1);
+        }
+
+        .btn-secondary:hover {
+            background: #726760;
+            border-color: #C3A69C;
+            color: #212A27;
+            box-shadow: 
+                0 4px 8px rgba(0, 12, 14, 0.6),
+                inset 0 1px 2px rgba(195, 166, 156, 0.2);
+            text-shadow: none;
+        }
+
+        .btn-danger {
+            background: #42463E;
+            border: 2px solid #726760;
+            color: #C3A69C;
+            box-shadow: 
+                0 2px 4px rgba(0, 12, 14, 0.5),
+                inset 0 1px 2px rgba(195, 166, 156, 0.1);
+        }
+
+        .btn-danger:hover {
+            background: #726760;
+            border-color: #C3A69C;
+            color: #212A27;
+            box-shadow: 
+                0 4px 8px rgba(0, 12, 14, 0.6),
+                inset 0 1px 2px rgba(195, 166, 156, 0.2);
+            text-shadow: none;
+        }
+
+        .hours-display {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .hours-card {
+            background: #42463E;
+            border: 2px solid #726760;
+            border-radius: 8px;
+            padding: 25px;
+            text-align: center;
+            color: #C8B8AA;
+            box-shadow: 
+                0 2px 8px rgba(0, 12, 14, 0.5),
+                inset 0 1px 2px rgba(200, 184, 170, 0.1);
+        }
+
+        .hours-card h3 {
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+            opacity: 0.9;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #C3A69C;
+            text-shadow: 0 1px 2px rgba(0, 12, 14, 0.5);
+        }
+
+        .hours-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin: 0;
+            color: #C8B8AA;
+            text-shadow: 
+                0 2px 4px rgba(0, 12, 14, 0.5),
+                0 0 8px rgba(200, 184, 170, 0.3);
+        }
+
+        .lunch-info {
+            background: #42463E;
+            border-left: 4px solid #C3A69C;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            color: #C3A69C;
+            font-weight: 500;
+            box-shadow: 
+                0 2px 4px rgba(0, 12, 14, 0.5),
+                inset 0 1px 2px rgba(195, 166, 156, 0.1);
+            text-shadow: 0 1px 2px rgba(0, 12, 14, 0.5);
+        }
+
+        .manual-entry {
+            background: #42463E;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            border: 2px solid #726760;
+            box-shadow: 
+                0 2px 4px rgba(0, 12, 14, 0.5),
+                inset 0 1px 2px rgba(200, 184, 170, 0.1);
+        }
+
+        .manual-entry-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            cursor: pointer;
+        }
+
+        .manual-entry-header h3 {
+            font-size: 1.1rem;
+            color: #C8B8AA;
+            margin: 0;
+            text-shadow: 0 1px 2px rgba(0, 12, 14, 0.5);
+        }
+
+        .manual-entry-header span {
+            color: #C8B8AA;
+            font-size: 1.2rem;
+        }
+
+        .manual-entry-content {
+            display: none;
+        }
+
+        .manual-entry-content.show {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #7dd3fc;
+            font-weight: 500;
+            font-size: 0.9rem;
+            text-shadow: 0 0 3px rgba(125, 211, 252, 0.4);
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            background: #0a0a0a;
+            border: 2px solid #00d9ff;
+            border-radius: 5px;
+            font-size: 1rem;
+            color: #00d9ff;
+            transition: all 0.3s;
+            font-family: 'Courier New', monospace;
+            box-shadow: 
+                0 0 5px rgba(0, 217, 255, 0.3),
+                inset 0 0 5px rgba(0, 217, 255, 0.08);
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #a855f7;
+            box-shadow: 
+                0 0 10px rgba(168, 85, 247, 0.6),
+                0 0 20px rgba(168, 85, 247, 0.3),
+                inset 0 0 10px rgba(168, 85, 247, 0.1);
+            color: #a855f7;
+        }
+
+        .form-group input[type="checkbox"] {
+            width: auto;
+            margin-right: 8px;
+            cursor: pointer;
+        }
+
+        .form-group input[type="checkbox"]:checked {
+            accent-color: #00d9ff;
+        }
+
+        .form-group input::placeholder {
+            color: #00d9ff55;
+        }
+
+        .form-group input[type="date"]::-webkit-calendar-picker-indicator,
+        .form-group input[type="time"]::-webkit-calendar-picker-indicator {
+            filter: invert(1) sepia(1) saturate(5) hue-rotate(180deg);
+            cursor: pointer;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .btn-small {
+            padding: 10px 20px;
+            font-size: 0.9rem;
+        }
+
+        .btn-outline {
+            background: #42463E;
+            border: 2px solid #726760;
+            color: #C8B8AA;
+            box-shadow: 
+                0 2px 4px rgba(0, 12, 14, 0.5),
+                inset 0 1px 2px rgba(200, 184, 170, 0.1);
+        }
+
+        .btn-outline:hover {
+            background: #726760;
+            border-color: #C8B8AA;
+            color: #212A27;
+            box-shadow: 
+                0 4px 8px rgba(0, 12, 14, 0.6),
+                inset 0 1px 2px rgba(200, 184, 170, 0.2);
+            text-shadow: none;
+        }
+
+        .load-btn {
+            margin-top: 5px;
+            width: 100%;
+            font-size: 0.85rem;
+            padding: 8px 15px;
+        }
+
+        .todo-section {
+            background: #42463E;
+            border: 2px solid #726760;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 
+                0 2px 4px rgba(0, 12, 14, 0.5),
+                inset 0 1px 2px rgba(200, 184, 170, 0.1);
+        }
+
+        .todo-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #726760;
+            padding-bottom: 10px;
+        }
+
+        .todo-header h3 {
+            font-size: 1.2rem;
+            color: #C8B8AA;
+            margin: 0;
+            text-shadow: 0 1px 2px rgba(0, 12, 14, 0.5);
+        }
+
+        .todo-input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .todo-input {
+            flex: 1;
+            padding: 10px;
+            background: #212A27;
+            border: 2px solid #726760;
+            border-radius: 5px;
+            font-size: 1rem;
+            color: #C8B8AA;
+            font-family: 'Courier New', monospace;
+            box-shadow: 
+                0 1px 3px rgba(0, 12, 14, 0.5),
+                inset 0 1px 2px rgba(200, 184, 170, 0.1);
+        }
+
+        .todo-input:focus {
+            outline: none;
+            border-color: #C8B8AA;
+            box-shadow: 
+                0 2px 6px rgba(0, 12, 14, 0.6),
+                0 0 8px rgba(200, 184, 170, 0.3),
+                inset 0 1px 2px rgba(200, 184, 170, 0.15);
+        }
+
+        .todo-input::placeholder {
+            color: #726760;
+        }
+
+        .btn-todo {
+            padding: 10px 20px;
+            font-size: 0.9rem;
+        }
+
+        .todo-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .todo-item {
+            background: #212A27;
+            border: 1px solid #726760;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.2s;
+        }
+
+        .todo-item:hover {
+            border-color: #C8B8AA;
+            box-shadow: 0 2px 4px rgba(0, 12, 14, 0.3);
+        }
+
+        .todo-item.completed {
+            opacity: 0.6;
+        }
+
+        .todo-item.completed .todo-text {
+            text-decoration: line-through;
+            color: #726760;
+        }
+
+        .todo-checkbox {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color: #C8B8AA;
+        }
+
+        .todo-text {
+            flex: 1;
+            color: #C8B8AA;
+            font-size: 0.95rem;
+            word-break: break-word;
+        }
+
+        .todo-delete {
+            background: transparent;
+            border: 1px solid #726760;
+            color: #C3A69C;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+
+        .todo-delete:hover {
+            background: #726760;
+            border-color: #C3A69C;
+            color: #212A27;
+        }
+
+        .todo-empty {
+            text-align: center;
+            color: #726760;
+            padding: 20px;
+            font-style: italic;
+        }
+
+        @media (max-width: 900px) {
+            body {
+                flex-direction: column;
+            }
+
+            .app-wrapper {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                max-width: 100%;
+                position: relative;
+                top: 0;
+                max-height: 300px;
+            }
+
+            .container {
+                max-width: 100%;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 25px;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .lunch-controls {
+                flex-direction: column;
+            }
+
+            .hours-display {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-wrapper">
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h2>📊 Daily Hours</h2>
+            </div>
+            <div id="dailyHoursList"></div>
+        </div>
+        <div class="container">
+        <header class="header">
+            <h1>⚡ TimeSheet.exe</h1>
+            <p class="date" id="dateDisplay"></p>
+        </header>
+
+        <div class="status-card">
+            <div class="status-indicator">
+                <div class="status-dot" id="statusDot"></div>
+                <span class="status-text" id="statusText">Clocked Out</span>
+            </div>
+            <p class="clock-time" id="clockTime"></p>
+        </div>
+
+        <div class="controls" id="controls"></div>
+
+        <div class="hours-display">
+            <div class="hours-card">
+                <h3>Today's Hours</h3>
+                <p class="hours-value" id="todayHours">0.00</p>
+            </div>
+            
+            <div class="hours-card">
+                <h3>Week's Hours</h3>
+                <p class="hours-value" id="weekHours">0.00</p>
+            </div>
+        </div>
+
+        <div class="lunch-info" id="lunchInfo" style="display: none;"></div>
+
+        <div class="manual-entry">
+            <div class="manual-entry-header" onclick="toggleManualEntry()">
+                <h3>⚙️ Manual Time Entry</h3>
+                <span id="toggleIcon">▼</span>
+            </div>
+            <div class="manual-entry-content" id="manualEntryContent">
+                <div class="form-group">
+                    <label for="entryDate">Date</label>
+                    <input type="date" id="entryDate" value="" onchange="loadDateData()">
+                    <button class="btn btn-outline load-btn" onclick="loadDateData()">Load Existing Entry</button>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="clockInTime">Clock In Time</label>
+                        <input type="time" id="clockInTime">
+                    </div>
+                    <div class="form-group">
+                        <label for="clockOutTime">Clock Out Time</label>
+                        <input type="time" id="clockOutTime">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="lunchStartTime">Lunch Start Time</label>
+                        <input type="time" id="lunchStartTime">
+                    </div>
+                    <div class="form-group">
+                        <label for="lunchEndTime">Lunch End Time</label>
+                        <input type="time" id="lunchEndTime">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="skipLunchCheck"> Skip Lunch
+                    </label>
+                </div>
+                <button class="btn btn-primary btn-small" onclick="saveManualEntry()">Save Manual Entry</button>
+            </div>
+        </div>
+
+        <div class="todo-section">
+            <div class="todo-header">
+                <h3>✓ Daily Todo</h3>
+            </div>
+            <div class="todo-input-group">
+                <input 
+                    type="text" 
+                    id="todoInput" 
+                    class="todo-input" 
+                    placeholder="Add a new task..."
+                    onkeypress="if(event.key === 'Enter') addTodo()"
+                >
+                <button class="btn btn-primary btn-todo" onclick="addTodo()">Add</button>
+            </div>
+            <ul class="todo-list" id="todoList"></ul>
+        </div>
+    </div>
+    </div>
+
+    <script>
+        let data = {};
+        let currentStatus = {
+            clockedIn: false,
+            onLunch: false,
+            clockInTime: null,
+            lunchStartTime: null,
+            lunchEndTime: null,
+            skippedLunch: false
+        };
+        let today = '';
+
+        // Initialize
+        function init() {
+            // Get today's date string (YYYY-MM-DD)
+            const todayDate = new Date();
+            today = todayDate.toISOString().split('T')[0];
+            
+            // Display date
+            document.getElementById('dateDisplay').textContent = formatDate(today);
+
+            // Load data from localStorage
+            const savedData = localStorage.getItem('timesheetData');
+            if (savedData) {
+                try {
+                    data = JSON.parse(savedData);
+                    
+                    // Check if already clocked in today
+                    if (data[today]) {
+                        const todayData = data[today];
+                        if (todayData.clockInTime && !todayData.clockOutTime) {
+                            currentStatus = {
+                                clockedIn: true,
+                                onLunch: todayData.onLunch || false,
+                                clockInTime: todayData.clockInTime,
+                                lunchStartTime: todayData.lunchStartTime || null,
+                                lunchEndTime: todayData.lunchEndTime || null,
+                                skippedLunch: todayData.skippedLunch || false
+                            };
+                        }
+                    }
+                } catch (e) {
+                    console.error('Error loading data:', e);
+                    data = {};
+                }
+            }
+
+            updateUI();
+            updateDailyHoursList();
+            loadTodos();
+            
+            // Set default date to today for manual entry
+            document.getElementById('entryDate').value = today;
+        }
+
+        function isWeekday() {
+            const day = new Date().getDay();
+            return day >= 1 && day <= 5; // Monday = 1, Friday = 5
+        }
+
+        function saveData() {
+            localStorage.setItem('timesheetData', JSON.stringify(data));
+        }
+
+        function clockIn() {
+            if (!isWeekday()) {
+                alert('You can only clock in Monday through Friday!');
+                return;
+            }
+
+            const now = new Date().toISOString();
+            
+            if (!data[today]) {
+                data[today] = {
+                    clockInTime: now,
+                    clockOutTime: null,
+                    lunchStartTime: null,
+                    lunchEndTime: null,
+                    skippedLunch: false,
+                    onLunch: false
+                };
+            } else {
+                data[today].clockInTime = now;
+                data[today].clockOutTime = null;
+            }
+
+            currentStatus = {
+                clockedIn: true,
+                onLunch: false,
+                clockInTime: now,
+                lunchStartTime: null,
+                lunchEndTime: null,
+                skippedLunch: false
+            };
+
+            saveData();
+            updateUI();
+            updateDailyHoursList();
+        }
+
+        function clockOut() {
+            if (!currentStatus.clockedIn) {
+                alert('You must clock in first!');
+                return;
+            }
+
+            const now = new Date().toISOString();
+            
+            if (data[today]) {
+                data[today].clockOutTime = now;
+                if (currentStatus.onLunch) {
+                    data[today].onLunch = false;
+                }
+            }
+
+            currentStatus = {
+                clockedIn: false,
+                onLunch: false,
+                clockInTime: null,
+                lunchStartTime: null,
+                lunchEndTime: null,
+                skippedLunch: false
+            };
+
+            saveData();
+            updateUI();
+            updateDailyHoursList();
+        }
+
+        function startLunch() {
+            if (!currentStatus.clockedIn) {
+                alert('You must be clocked in to start lunch!');
+                return;
+            }
+
+            if (currentStatus.onLunch) {
+                alert('You are already on lunch!');
+                return;
+            }
+
+            const now = new Date().toISOString();
+            
+            if (data[today]) {
+                data[today].lunchStartTime = now;
+                data[today].onLunch = true;
+            }
+
+            currentStatus.onLunch = true;
+            currentStatus.lunchStartTime = now;
+
+            saveData();
+            updateUI();
+            updateDailyHoursList();
+        }
+
+        function endLunch() {
+            if (!currentStatus.onLunch) {
+                alert('You are not currently on lunch!');
+                return;
+            }
+
+            const now = new Date().toISOString();
+            
+            if (data[today]) {
+                data[today].lunchEndTime = now;
+                data[today].onLunch = false;
+            }
+
+            currentStatus.onLunch = false;
+            currentStatus.lunchEndTime = now;
+
+            saveData();
+            updateUI();
+            updateDailyHoursList();
+        }
+
+        function skipLunch() {
+            if (!currentStatus.clockedIn) {
+                alert('You must be clocked in to skip lunch!');
+                return;
+            }
+
+            if (currentStatus.onLunch) {
+                alert('You are currently on lunch! End lunch first.');
+                return;
+            }
+
+            if (data[today]) {
+                data[today].skippedLunch = true;
+            }
+
+            currentStatus.skippedLunch = true;
+
+            saveData();
+            updateUI();
+        }
+
+        function calculateHours(dateStr) {
+            if (!data[dateStr]) return 0;
+
+            const dayData = data[dateStr];
+            if (!dayData.clockInTime) return 0;
+
+            const clockOut = dayData.clockOutTime 
+                ? new Date(dayData.clockOutTime) 
+                : new Date();
+            
+            const clockIn = new Date(dayData.clockInTime);
+            let totalMs = clockOut - clockIn;
+
+            // Subtract lunch time if taken
+            if (dayData.lunchStartTime && dayData.lunchEndTime) {
+                const lunchStart = new Date(dayData.lunchStartTime);
+                const lunchEnd = new Date(dayData.lunchEndTime);
+                totalMs -= (lunchEnd - lunchStart);
+            }
+
+            return totalMs / (1000 * 60 * 60); // Convert to hours
+        }
+
+        function getWeekHours() {
+            const todayDate = new Date();
+            const dayOfWeek = todayDate.getDay();
+            const monday = new Date(todayDate);
+            monday.setDate(todayDate.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+            
+            let totalHours = 0;
+            for (let i = 0; i < 5; i++) {
+                const date = new Date(monday);
+                date.setDate(monday.getDate() + i);
+                const dateStr = date.toISOString().split('T')[0];
+                totalHours += calculateHours(dateStr);
+            }
+            
+            return totalHours;
+        }
+
+        function formatTime(dateStr) {
+            if (!dateStr) return 'N/A';
+            const date = new Date(dateStr);
+            return date.toLocaleTimeString('en-US', { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                hour12: true 
+            });
+        }
+
+        function formatDate(dateStr) {
+            const date = new Date(dateStr + 'T00:00:00');
+            return date.toLocaleDateString('en-US', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+        }
+
+        function formatDateShort(dateStr) {
+            const date = new Date(dateStr + 'T00:00:00');
+            return date.toLocaleDateString('en-US', { 
+                weekday: 'short', 
+                month: 'short', 
+                day: 'numeric' 
+            });
+        }
+
+        function updateDailyHoursList() {
+            const listContainer = document.getElementById('dailyHoursList');
+            if (!listContainer) return;
+
+            // Get all dates from data and sort them (newest first)
+            const dates = Object.keys(data).sort((a, b) => {
+                return new Date(b) - new Date(a);
+            });
+
+            if (dates.length === 0) {
+                listContainer.innerHTML = '<div style="color: #726760; text-align: center; padding: 20px;">No entries yet</div>';
+                return;
+            }
+
+            let html = '';
+            dates.forEach(dateStr => {
+                const hours = calculateHours(dateStr);
+                const isToday = dateStr === today;
+                const dayEntryClass = isToday ? 'day-entry today' : 'day-entry';
+                
+                html += `
+                    <div class="${dayEntryClass}">
+                        <div class="day-date">${formatDateShort(dateStr)}</div>
+                        <div class="day-hours">${hours.toFixed(2)} <span class="day-hours-label">hours</span></div>
+                    </div>
+                `;
+            });
+
+            listContainer.innerHTML = html;
+        }
+
+        function updateUI() {
+            // Update status
+            const statusDot = document.getElementById('statusDot');
+            const statusText = document.getElementById('statusText');
+            const clockTime = document.getElementById('clockTime');
+            
+            if (currentStatus.clockedIn) {
+                statusDot.className = 'status-dot active';
+                statusText.textContent = currentStatus.onLunch ? 'On Lunch' : 'Clocked In';
+                if (currentStatus.clockInTime) {
+                    clockTime.textContent = 'Clocked in at: ' + formatTime(currentStatus.clockInTime);
+                }
+            } else {
+                statusDot.className = 'status-dot inactive';
+                statusText.textContent = 'Clocked Out';
+                clockTime.textContent = '';
+            }
+
+            // Update controls
+            const controls = document.getElementById('controls');
+            controls.innerHTML = '';
+
+            if (!currentStatus.clockedIn) {
+                const btn = document.createElement('button');
+                btn.className = 'btn btn-primary';
+                btn.textContent = 'Clock In';
+                btn.onclick = clockIn;
+                controls.appendChild(btn);
+            } else {
+                if (!currentStatus.onLunch && !currentStatus.skippedLunch) {
+                    const lunchControls = document.createElement('div');
+                    lunchControls.className = 'lunch-controls';
+                    
+                    const startBtn = document.createElement('button');
+                    startBtn.className = 'btn btn-secondary';
+                    startBtn.textContent = 'Start Lunch';
+                    startBtn.onclick = startLunch;
+                    lunchControls.appendChild(startBtn);
+                    
+                    const skipBtn = document.createElement('button');
+                    skipBtn.className = 'btn btn-secondary';
+                    skipBtn.textContent = 'Skip Lunch';
+                    skipBtn.onclick = skipLunch;
+                    lunchControls.appendChild(skipBtn);
+                    
+                    controls.appendChild(lunchControls);
+                } else if (currentStatus.onLunch) {
+                    const endBtn = document.createElement('button');
+                    endBtn.className = 'btn btn-secondary';
+                    endBtn.textContent = 'End Lunch';
+                    endBtn.onclick = endLunch;
+                    controls.appendChild(endBtn);
+                }
+                
+                const outBtn = document.createElement('button');
+                outBtn.className = 'btn btn-danger';
+                outBtn.textContent = 'Clock Out';
+                outBtn.onclick = clockOut;
+                controls.appendChild(outBtn);
+            }
+
+            // Update hours
+            const todayHours = calculateHours(today);
+            const weekHours = getWeekHours();
+            
+            document.getElementById('todayHours').textContent = todayHours.toFixed(2);
+            document.getElementById('weekHours').textContent = weekHours.toFixed(2);
+
+            // Update lunch info
+            const lunchInfoEl = document.getElementById('lunchInfo');
+            if (currentStatus.onLunch && currentStatus.lunchStartTime) {
+                lunchInfoEl.style.display = 'block';
+                lunchInfoEl.textContent = 'Lunch started at: ' + formatTime(currentStatus.lunchStartTime);
+            } else if (currentStatus.skippedLunch) {
+                lunchInfoEl.style.display = 'block';
+                lunchInfoEl.textContent = '✓ Lunch skipped today';
+            } else {
+                lunchInfoEl.style.display = 'none';
+            }
+        }
+
+        function toggleManualEntry() {
+            const content = document.getElementById('manualEntryContent');
+            const icon = document.getElementById('toggleIcon');
+            content.classList.toggle('show');
+            icon.textContent = content.classList.contains('show') ? '▲' : '▼';
+            
+            // Set default date to today if opening
+            if (content.classList.contains('show')) {
+                document.getElementById('entryDate').value = today;
+            }
+        }
+
+        function loadDateData() {
+            const entryDate = document.getElementById('entryDate').value;
+            if (!entryDate) return;
+
+            if (data[entryDate]) {
+                const dayData = data[entryDate];
+                
+                // Convert ISO times to local time format (HH:MM)
+                if (dayData.clockInTime) {
+                    const clockIn = new Date(dayData.clockInTime);
+                    const hours = String(clockIn.getHours()).padStart(2, '0');
+                    const minutes = String(clockIn.getMinutes()).padStart(2, '0');
+                    document.getElementById('clockInTime').value = hours + ':' + minutes;
+                } else {
+                    document.getElementById('clockInTime').value = '';
+                }
+
+                if (dayData.clockOutTime) {
+                    const clockOut = new Date(dayData.clockOutTime);
+                    const hours = String(clockOut.getHours()).padStart(2, '0');
+                    const minutes = String(clockOut.getMinutes()).padStart(2, '0');
+                    document.getElementById('clockOutTime').value = hours + ':' + minutes;
+                } else {
+                    document.getElementById('clockOutTime').value = '';
+                }
+
+                if (dayData.lunchStartTime) {
+                    const lunchStart = new Date(dayData.lunchStartTime);
+                    const hours = String(lunchStart.getHours()).padStart(2, '0');
+                    const minutes = String(lunchStart.getMinutes()).padStart(2, '0');
+                    document.getElementById('lunchStartTime').value = hours + ':' + minutes;
+                } else {
+                    document.getElementById('lunchStartTime').value = '';
+                }
+
+                if (dayData.lunchEndTime) {
+                    const lunchEnd = new Date(dayData.lunchEndTime);
+                    const hours = String(lunchEnd.getHours()).padStart(2, '0');
+                    const minutes = String(lunchEnd.getMinutes()).padStart(2, '0');
+                    document.getElementById('lunchEndTime').value = hours + ':' + minutes;
+                } else {
+                    document.getElementById('lunchEndTime').value = '';
+                }
+
+                document.getElementById('skipLunchCheck').checked = dayData.skippedLunch || false;
+            } else {
+                // Clear form if no data for this date
+                document.getElementById('clockInTime').value = '';
+                document.getElementById('clockOutTime').value = '';
+                document.getElementById('lunchStartTime').value = '';
+                document.getElementById('lunchEndTime').value = '';
+                document.getElementById('skipLunchCheck').checked = false;
+            }
+        }
+
+        function saveManualEntry() {
+            const entryDate = document.getElementById('entryDate').value;
+            const clockInTime = document.getElementById('clockInTime').value;
+            const clockOutTime = document.getElementById('clockOutTime').value;
+            const lunchStartTime = document.getElementById('lunchStartTime').value;
+            const lunchEndTime = document.getElementById('lunchEndTime').value;
+            const skipLunch = document.getElementById('skipLunchCheck').checked;
+
+            if (!entryDate) {
+                alert('Please select a date');
+                return;
+            }
+
+            if (!clockInTime) {
+                alert('Please enter a clock in time');
+                return;
+            }
+
+            // Check if it's a weekday
+            const dateObj = new Date(entryDate);
+            const day = dateObj.getDay();
+            if (day < 1 || day > 5) {
+                if (!confirm('This date is not a weekday (Monday-Friday). Do you want to save it anyway?')) {
+                    return;
+                }
+            }
+
+            // Combine date and time into ISO string
+            const clockInISO = entryDate + 'T' + clockInTime + ':00';
+            const clockOutISO = clockOutTime ? entryDate + 'T' + clockOutTime + ':00' : null;
+            const lunchStartISO = lunchStartTime ? entryDate + 'T' + lunchStartTime + ':00' : null;
+            const lunchEndISO = lunchEndTime ? entryDate + 'T' + lunchEndTime + ':00' : null;
+
+            // Save to data
+            if (!data[entryDate]) {
+                data[entryDate] = {
+                    clockInTime: null,
+                    clockOutTime: null,
+                    lunchStartTime: null,
+                    lunchEndTime: null,
+                    skippedLunch: false,
+                    onLunch: false
+                };
+            }
+
+            data[entryDate].clockInTime = new Date(clockInISO).toISOString();
+            data[entryDate].clockOutTime = clockOutISO ? new Date(clockOutISO).toISOString() : null;
+            data[entryDate].lunchStartTime = lunchStartISO ? new Date(lunchStartISO).toISOString() : null;
+            data[entryDate].lunchEndTime = lunchEndISO ? new Date(lunchEndISO).toISOString() : null;
+            data[entryDate].skippedLunch = skipLunch;
+            data[entryDate].onLunch = false;
+
+            // If this is today and we're not clocked out, update current status
+            if (entryDate === today && !clockOutISO) {
+                currentStatus = {
+                    clockedIn: true,
+                    onLunch: false,
+                    clockInTime: data[entryDate].clockInTime,
+                    lunchStartTime: data[entryDate].lunchStartTime,
+                    lunchEndTime: data[entryDate].lunchEndTime,
+                    skippedLunch: skipLunch
+                };
+            } else if (entryDate === today && clockOutISO) {
+                currentStatus = {
+                    clockedIn: false,
+                    onLunch: false,
+                    clockInTime: null,
+                    lunchStartTime: null,
+                    lunchEndTime: null,
+                    skippedLunch: false
+                };
+            }
+
+            saveData();
+            updateUI();
+            updateDailyHoursList();
+
+            // Clear form
+            document.getElementById('clockInTime').value = '';
+            document.getElementById('clockOutTime').value = '';
+            document.getElementById('lunchStartTime').value = '';
+            document.getElementById('lunchEndTime').value = '';
+            document.getElementById('skipLunchCheck').checked = false;
+
+            alert('Time entry saved successfully!');
+        }
+
+        // Todo functions
+        let todos = {};
+
+        function loadTodos() {
+            const savedTodos = localStorage.getItem('timesheetTodos');
+            if (savedTodos) {
+                try {
+                    todos = JSON.parse(savedTodos);
+                } catch (e) {
+                    console.error('Error loading todos:', e);
+                    todos = {};
+                }
+            }
+            renderTodos();
+        }
+
+        function saveTodos() {
+            localStorage.setItem('timesheetTodos', JSON.stringify(todos));
+        }
+
+        function addTodo() {
+            const input = document.getElementById('todoInput');
+            const text = input.value.trim();
+            
+            if (!text) {
+                return;
+            }
+
+            if (!todos[today]) {
+                todos[today] = [];
+            }
+
+            const newTodo = {
+                id: Date.now(),
+                text: text,
+                completed: false
+            };
+
+            todos[today].push(newTodo);
+            saveTodos();
+            renderTodos();
+            
+            input.value = '';
+            input.focus();
+        }
+
+        function toggleTodo(todoId) {
+            if (!todos[today]) return;
+
+            const todo = todos[today].find(t => t.id === todoId);
+            if (todo) {
+                todo.completed = !todo.completed;
+                saveTodos();
+                renderTodos();
+            }
+        }
+
+        function deleteTodo(todoId) {
+            if (!todos[today]) return;
+
+            todos[today] = todos[today].filter(t => t.id !== todoId);
+            saveTodos();
+            renderTodos();
+        }
+
+        function renderTodos() {
+            const todoList = document.getElementById('todoList');
+            if (!todoList) return;
+
+            if (!todos[today] || todos[today].length === 0) {
+                todoList.innerHTML = '<li class="todo-empty">No tasks for today. Add one above!</li>';
+                return;
+            }
+
+            let html = '';
+            todos[today].forEach(todo => {
+                const completedClass = todo.completed ? 'completed' : '';
+                html += `
+                    <li class="todo-item ${completedClass}">
+                        <input 
+                            type="checkbox" 
+                            class="todo-checkbox" 
+                            ${todo.completed ? 'checked' : ''}
+                            onchange="toggleTodo(${todo.id})"
+                        >
+                        <span class="todo-text">${escapeHtml(todo.text)}</span>
+                        <button class="todo-delete" onclick="deleteTodo(${todo.id})">Delete</button>
+                    </li>
+                `;
+            });
+
+            todoList.innerHTML = html;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Initialize on load
+        init();
+
+        // Update hours every minute
+        setInterval(() => {
+            if (currentStatus.clockedIn) {
+                updateUI();
+                updateDailyHoursList();
+            }
+        }, 60000);
+    </script>
+</body>
+</html>
+

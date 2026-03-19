@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react';
  * A custom hook that calculates per-second earnings based on an hourly rate
  * and a clock-in timestamp. The returned value updates every 1 000 ms.
  *
- * @param {number} hourlyRate   - The employee's hourly pay rate (e.g. 25 for $25/hr)
+ * @param {number} hourlyRate       - The employee's hourly pay rate (e.g. 25 for $25/hr)
  * @param {string|null} clockInTime - ISO timestamp of when the user clocked in,
  *                                    or null/undefined when not clocked in.
  * @returns {number} currentEarnings - Earnings accumulated since clockInTime.

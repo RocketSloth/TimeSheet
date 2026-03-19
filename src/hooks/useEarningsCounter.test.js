@@ -79,22 +79,40 @@ describe('useEarningsCounter', () => {
   });
 
   // ─── Criterion 5 (transition) ────────────────────────────────────────────────
-  test('resets to 0 when clockInTime changes from a value to null', () => {
-    const clockInTime = new Date().toISOString();
+  test('resets earnings to 0 when clockInTime transitions from a value to null', () => {
+    let clockInTime = new Date(Date.now() - 30_000).toISOString();
 
     const { result, rerender } = renderHook(
+      ({ rate, time }) => useEarningsCounter(rate, time),
+      { initialProps: { rate: 3600, time: clockInTime } }
+    );
+
+    // Should have non-zero earnings after 30 s
+    expect(result.current).toBeGreaterThan(0);
+
+    // Clock out → pass null
+    act(() => {
+      rerender({ rate: 3600, time: null });
+    });
+
+    expect(result.current).toBe(0);
+  });
+
+  test('clears the interval when clockInTime changes to null', () => {
+    const clearIntervalSpy = jest.spyOn(global, 'clearInterval');
+    const clockInTime = new Date().toISOString();
+
+    const { rerender } = renderHook(
       ({ rate, time }) => useEarningsCounter(rate, time),
       { initialProps: { rate: 20, time: clockInTime } }
     );
 
-    // Advance time so earnings are non-zero
     act(() => {
-      jest.advanceTimersByTime(5000);
+      rerender({ rate: 20, time: null });
     });
-    expect(result.current).toBeGreaterThan(0);
 
-    // Clock out
-    rerender({ rate: 20, time: null });
-    expect(result.current).toBe(0);
+    // clearInterval should have been called when the previous effect cleaned up
+    expect(clearIntervalSpy).toHaveBeenCalled();
+    clearIntervalSpy.mockRestore();
   });
 });
